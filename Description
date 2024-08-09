@@ -1,0 +1,34 @@
+Overview of ABSA Oil’s Planning Problem
+ABSA is tasked with orchestrating a comprehensive planning problem centered around the procurement, processing, and distribution of crude oil. This complex challenge requires meticulous management of multiple components to ensure efficient production and distribution of refined petroleum products. Below are the key components of the planning problem:
+Crude Oil Specifications
+ABSA must evaluate the chemical properties of various types of crude oil, including their API gravity and sulphur content, to ensure they are suitable for refining into the desired petroleum products.
+Crude Oil Pricing and Supply Quotas
+Decisions regarding the purchase of crude oil are influenced by the cost per barrel and the available monthly supply quotas. These factors dictate the volume of crude oil ABSA can procure while staying within budgetary constraints and supply limitations.
+Shipping Logistics
+The availability of ships, their carrying capacity, and class play a crucial role in planning. Negotiating rates for these ships and scheduling their operations efficiently is critical to cost management and operational timeliness.
+ 
+Port Usage Charges
+Costs incurred from port usage vary depending on the class of the ships utilized. This necessitates strategic planning regarding which ships to deploy to minimize fees and optimize turnaround times.
+Trip Times
+The travel duration from crude oil suppliers to ABSA’s refineries affects the overall logistics schedule. Managing these trip times is vital for maintaining a steady supply chain and reducing idle time at refineries.
+Fuel Consumption by Ship Class
+Different classes of ships consume fuel at different rates. Planning for fuel consumption is essential not only for cost management but also for scheduling and routing ships to ensure fuel efficiency.
+Product Specifications, Production Costs, and Selling Prices
+Each petroleum product has specific requirements that must be met, influencing how crude oils are blended and processed. Understanding the costs associated with producing each product and their potential selling prices helps in forecasting profitability.
+Refinery Capacity and Regional Demand
+ABSA’s refineries have specific capacities which must not be exceeded. Aligning production volumes with regional demand ensures that production is neither insufficient nor excessive, thereby optimizing inventory levels and reducing wastage.
+
+
+The strategic integration of these components into ABSA’s planning problem enables the company to optimize operations across its supply chain. By leveraging prescriptive analytics, ABSA can devise strategies that minimize costs, meet production and quality standards, and align with market demands, thereby enhancing profitability and operational efficiency. This comprehensive approach to planning ensures that ABSA remains competitive and responsive in a dynamic market environment.
+
+
+Given this complex set of variables and factors, ABSA Oil has multiple key decisions to make:
+ 
+1.	Which crudes to purchase from each supplier and in what quantities?
+2.	How to transport the purchased crude to the refineries using the available tankers?
+3.	How much of each product to produce at each refinery from the crude mix?
+4.	How much excess product to sell at a discount after meeting demand?
+
+The objective for ABSA Oil, as for most private organisations, is to maximise profit, and the goal is to make these decisions in a way that enables maximum profit. In the following section, we will explore the various analyses conducted, and models built using the available data, to help gather insights on the above decisions to be made.
+
+
