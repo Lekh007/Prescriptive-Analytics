@@ -1,0 +1,223 @@
+Model & Analysis
+
+The model given aims to optimize the procurement, refining, and distribution of crude oil efficiently. The model incorporates various parameters and decision variables to optimize the operations of ABSA.
+
+
+Parameters and Data Structure
+
+
+Types and Ranges
+Count variables such as numTypesOfCrudeOils, numProductNames, numRefineries, numTankerVessels, and numTankerVesselsShips define the number of crude oil types, product types, refineries, tanker vessels, and ships respectively.
+Index ranges crudeOilsRange, productsRange, refineriesRange, vesselRange, and shipsRange are crucial for accessing and manipulating data arrays that store specifics for each crude oil, product, refinery, and vessel.
+
+
+Crude Oil and Product Attributes
+Attributes for crude oils including pricePerCrudeOil, apiGravityByOil, sulphurContentByOil, and productionQuotaByOil govern the procurement strategy based on cost, chemical properties, and available quantities.
+Product attributes pricePerProduct, sulphurContentByProduct, upperProductSpecification, lowerProductSpecification, and totalDemandByProduct guide the production processes to align with market demands and compliance standards.
+
+
+Refinery and Shipping Logistics
+capacityByRefinery and demandByRefineryAndProduct determine the refining capabilities and the required output to satisfy regional market demands.
+ 
+Shipping parameters including pricePerTankerAndShip, dwtBarrelsPerTankerAndShip, fuelConsumptionPerDayByVessel, travelDaysByOilAndRefinery, and portChargesByOilAndVessel optimize the logistics of transporting crude oil, focusing on cost-efficiency and scheduling precision.
+
+
+Operational Data
+The dwtBarrelsPerTankerAndShip metric specifies the carrying capacity of each ship, which is critical for planning the volume of crude oil transported.
+travelDaysByOilAndRefinery detail the transit times required for shipments, influencing delivery schedules and inventory levels.
+Operational costs such as fuelConsumptionPerDayByVessel and portChargesByOilAndVessel impact the overall economic viability of the transportation operations.
+
+
+Decision Variables
+
+
+oilToProductRefineryAllocation[crudeOilsRange, productsRange, refineriesRange]
+Type: Non-negative integer.
+Description: This variable determines the amount of each type of crude oil (indexed by crudeOilsRange) that is processed into each type of product (indexed by productsRange) at each refinery (indexed by refineriesRange).
+Purpose: It allocates crude oils to different products and refineries based on refining capacity, crude availability, product demand, and quality requirements. This allocation must efficiently satisfy product demands while adhering to the production capacities and specific crude oil characteristics required for different products.
+
+
+totalProductOutput[productsRange]
+ 
+Type: Non-negative integer.
+Description: This variable specifies the total production output for each product type (indexed by productsRange).
+Purpose: It ensures that the total production of each product meets or exceeds the regional demand. This variable is critical for maintaining balance in supply and demand, avoiding underproduction that could lead to shortages or overproduction that could inflate inventory costs.
+
+
+tankerAllocation[vesselRange, shipsRange, crudeOilsRange, refineriesRange]
+Type: Boolean (0 or 1).
+Description: This variable indicates whether a specific tanker (indexed by vesselRange and shipsRange) is allocated to transport a specific type of crude oil (indexed by crudeOilsRange) to a specific refinery (indexed by refineriesRange).
+Purpose: It optimizes the distribution of crude oil to refineries via different tankers and ships, considering factors like transportation costs, tanker capacities, and the logistical efficiency of delivering specific crude oils to particular refineries. This variable helps in minimizing shipping costs and ensuring timely delivery of crude oil.
+
+
+directTankerAssignment[vesselRange, crudeOilsRange, refineriesRange]
+Type: Boolean (0 or 1).
+Description: This variable determines whether a particular tanker (indexed by vesselRange) is directly assigned to transport a specific type of crude oil (indexed by crudeOilsRange) to a specific refinery (indexed by refineriesRange).
+Purpose: Unlike tankerAllocation, which can involve multiple ships under one vessel class, directTankerAssignment is about assigning specific tankers for direct routes, optimizing route planning, and reducing operational complexities associated with multi-stop shipping routes. This helps in reducing fuel consumption and improving the efficiency of crude oil transportation.
+ 
+Objective Function
+
+
+Revenue Components
+1.	sum (productIdx in productsRange) totalDemandByProduct[productIdx] * pricePerProduct[productIdx])
+Explanation: This term calculates the total revenue generated from selling each product, assuming that each product is sold at its demand level at the given price. It multiplies the demand for each product by its selling price.
+
+2.	(sum (productIdx in productsRange) 0.93 * pricePerProduct[productIdx] * (totalProductOutput[productIdx] - totalDemandByProduct[productIdx]))
+Explanation: This component accounts for the revenue (or cost savings) from excess production that is not sold at the full market price. It assumes excess product is sold at a 7% discount (hence, 0.93 times the price), incentivizing the model to not overproduce beyond the market demand.
+
+
+Cost Components
+1.	(sum (oilIdx in crudeOilsRange) (sum (productIdx in productsRange, refineryIdx in refineriesRange) oilToProductRefineryAllocation[oilIdx, productIdx, refineryIdx]) * (pricePerCrudeOil[oilIdx] + 19))
+Explanation: This term aggregates the costs associated with purchasing crude oil, where each type of crude oil has a base cost plus an additional fixed cost (possibly representing processing or handling fees). The total purchase cost for each oil type is determined by its allocated amount for processing.
+2.	(sum (vesselIdx in vesselRange) (sum (shipIdx in shipsRange) (sum (oilIdx in crudeOilsRange, refineryIdx
+ 
+in refineriesRange) tankerAllocation[vesselIdx, shipIdx, oilIdx, refineryIdx] * travelDaysByOilAndRefinery[oilIdx, refineryIdx] * pricePerTankerAndShip[vesselIdx, shipIdx])))
+Explanation: This calculates the total transportation cost for shipping crude oil, considering the allocation of tankers, the duration of each trip, and the rates charged per day for each ship used.
+3.	(sum (vesselIdx in vesselRange) (sum (oilIdx in crudeOilsRange, refineryIdx in refineriesRange) directTankerAssignment[vesselIdx, oilIdx, refineryIdx] * travelDaysByOilAndRefinery[oilIdx, refineryIdx] * fuelConsumptionPerDayByVessel[vesselIdx]))
+Explanation: This component sums up the fuel costs incurred by directly assigned tankers based on their travel duration and daily fuel consumption.
+4.	(sum (vesselIdx in vesselRange) (sum (shipIdx in shipsRange, oilIdx in crudeOilsRange, refineryIdx in refineriesRange) tankerAllocation[vesselIdx, shipIdx, oilIdx, refineryIdx] * portChargesByOilAndVessel[oilIdx, vesselIdx]));
+Explanation: This calculates the port charges incurred for each tanker and ship allocated, depending on the oil type and the specific vessel used for transportation.
+Overall, this objective function strategically maximizes profitability by carefully managing the production and logistical operations against the backdrop of market prices, demand, and operational costs, ensuring that the operational activities align with financial goals and market conditions.
+
+
+Constraints
+ 
+Production Quota for Crude Oil
+Variables:
+oilToProductRefineryAllocation[oilIdx][productIdx][refineryIdx
+], productionQuotaByOil[oilIdx]
+
+Description: This constraint ensures that the total amount of each type of crude oil allocated across all products and refineries does not exceed its available production quota. It maintains supply limits to avoid overproduction.
+
+
+Lower Limit for API Gravity
+Variables:
+oilToProductRefineryAllocation[oilIdx][productIdx][refineryIdx
+], apiGravityByOil[oilIdx], lowerProductSpecification[productIdx]
+Description: Ensures that the weighted average API gravity of the blended oils used to produce each product at each refinery meets or exceeds the minimum required API gravity for that product. This constraint guarantees product quality from a gravity perspective.
+
+
+Upper Limit for API Gravity
+Variables: Same as the lower limit but uses
+upperProductSpecification[productIdx].
+
+Description: Ensures that the weighted average API gravity does not exceed the maximum allowable limit, thus maintaining product specifications and regulatory compliance.
+
+
+Content Limit for Sulphur
+Variables:
+oilToProductRefineryAllocation[oilIdx][productIdx][refineryIdx
+], sulphurContentByOil[oilIdx], sulphurContentByProduct[productIdx]
+ 
+Description: Controls the sulphur content in the final product by limiting the sulphur content of the oils processed, ensuring that products comply with environmental and safety regulations.
+
+
+Product Demand Fulfillment by Refinery
+Variables:
+oilToProductRefineryAllocation[oilIdx][productIdx][refineryIdx
+], demandByRefineryAndProduct[refineryIdx, productIdx]
+
+Description: Guarantees that the production of each product meets or exceeds the demand specified for it at each refinery, ensuring that market demands are adequately met.
+
+
+Production Targets for Product
+Variables: oilToProductRefineryAllocation[oilIdx, productIdx, refineryIdx], totalProductOutput[productIdx]
+Description: Aligns the total output for each product with the sum of allocations across all refineries, ensuring consistency between planned production outputs and actual allocations.
+
+
+Capacity Limit of Refinery
+Variables:
+oilToProductRefineryAllocation[oilIdx][productIdx][refineryIdx
+], capacityByRefinery[refineryIdx]
+
+Description: Prevents the total processing of crude oil at any refinery from exceeding its capacity, maintaining operational safety and efficiency.
+
+
+Ensuring Production Meets or Exceeds Demand Variables: totalProductOutput[productIdx], totalDemandByProduct[productIdx]
+Description: Ensures that the production volume for each product is sufficient to meet its market demand, optimizing inventory and sales potential.
+ 
+Transportation Requirement for Crude Oil
+Variables: tankerAllocation[vesselIdx, shipIdx, oilIdx, refineryIdx], dwtBarrelsPerTankerAndShip[vesselIdx, shipIdx], oilToProductRefineryAllocation[oilIdx, productIdx, refineryIdx]
+Description: Ensures that the allocated tanker capacity is sufficient to transport the allocated crude oil volume, facilitating efficient logistics.
+
+
+Fuel Consumption for Transportation
+Variables: directTankerAssignment[vesselIdx, oilIdx, refineryIdx], travelDaysByOilAndRefinery[oilIdx, refineryIdx], fuelConsumptionPerDayByVessel[vesselIdx]
+Description: Ensures that fuel allocated for direct tanker assignments is adequate for the transportation needs based on the duration of the trip and the vessel's fuel consumption rate.
+
+
+Making Ships 5 to 8 in Vessel 3 and 4 as Zero
+Variables: tankerAllocation[vesselIdx, shipIdx, oilIdx, refineryIdx]
+Description: Specifically restricts the use of ships 5 to 8 in vessels 3 and 4, possibly due to maintenance or operational preferences, enhancing logistical planning and vessel utilization.
+
+
+Ship Selection Constraint
+Variables: tankerAllocation[vesselIdx, shipIdx, oilIdx, refineryIdx]
+Description: Ensures that each ship under a specific vessel class is not overloaded with assignments, promoting optimal use of the shipping fleet and preventing logistical conflicts.
+ 
+Assumptions & Limitations
+Below is a detailed description of each of the assumptions made for our analysis:
+
+Crude Purchased Can Be Processed Within the Same Month
+This assumption simplifies inventory management by implying that any crude oil purchased in a given month is processed immediately within that same month, eliminating the need for storage or carryover of stock.
+Tankers Hired on a Trip Time Charter Without DWT Capacity Constraints
+The model assumes that tankers are chartered based on the time needed for a trip rather than the weight they can carry (Deadweight Tonnage - DWT), suggesting that logistic planning focuses on time efficiency rather than cargo size.
+Limit of One Tanker Per Type per Route
+It is assumed that only one tanker of each type can be used per transportation route at any time, which simplifies routing and scheduling by limiting the number of tankers simultaneously active on the same route.
+Constant Speed of Tankers
+All tankers are assumed to travel at a uniform speed of 15 knots, which standardizes travel times and simplifies calculations related to scheduling and fuel consumption.
+Fuel Consumption is Constant for Each Tanker Class Regardless of Load & Time for each trip is 24 hours
+This assumption states that the fuel consumption of a tanker is consistent regardless of how much cargo it is carrying, allowing for predictable operational costs and easier planning of fuel needs. Also, the time taken for fuel consumption for each ship is 24 hours.
+All Demand Must Be Met; Excess Production Sold at a Discount
+The model mandates that production must at least meet market demand. Any production exceeding demand is assumed to be sold at a 7% discount, impacting revenue calculations for surplus products.
+Linear Averaging of Crude API and Sulphur in Blended Crude
+API gravity and sulphur content are linearly averaged when different types of crude oil are blended for processing. This simplifies the chemical complexity involved in blending different crudes for desired product specifications.
+ 
+Consistent Crude Properties
+The properties of crude oil (like API gravity and sulphur content) are assumed to be constant and unaffected by interactions with other crude types or products, simplifying the modeling of refining processes.
+No Capacity Constraints at Ports; Ignored Loading/Unloading Times
+This assumption eliminates the need to account for potential bottlenecks at ports due to capacity limits or delays from loading/unloading operations, streamlining the logistics of shipping operations.
+No Consideration of Taxes, Duties, or Other Charges Beyond Given Costs
+The model does not account for any fiscal obligations like taxes or duties that might typically affect the cost structure of international trading operations, focusing only on the direct costs provided.
+
+Recommendations
+
+Optimization of Crude Oil Mix and Processing
+The optimization of crude oil mix and processing involves strategically selecting and combining different types of crude oils to produce petroleum products that meet specific quality standards while minimizing costs. For ABSA Oil, which operates refineries in Europe and processes various types of gasoline, jet fuel, diesel, and heating oil, optimizing the crude oil blend is crucial to achieving cost efficiency and product quality. Figure 7 shows a scatter plot of the crude oil suitability for product specifications.
+
+Figure 1
+
+
+Red (Laguna): This crude has a low API gravity and high sulphur content, making it heavy and sour. It is less desirable for light product production and might require more intensive processing.
+Green (Poseidon Streams): With medium API gravity and high sulphur content, this crude is also considered sour and may be suitable for producing heavier products or require desulphurization.
+ 
+Blue (Azeri BTC): A light, sweet crude due to its high API gravity and low sulphur content, making it ideal for producing high-quality products with less processing.
+Purple (Snøhvit Condensate): The lightest and sweetest of the four, this crude is extremely valuable as it can be processed into the highest quality products with minimal refinement needed.
+
+Refinery Production Planning
+For ABSA Oil, Refinery Production Planning involves strategizing the allocation of crude oil blends to different refineries to maximize throughput while meeting regional product demands. This recommendation entails a detailed approach to planning refinery operations, ensuring that production levels are optimized according to the processing capabilities of each refinery and the specific needs of the markets they serve. Figure 8 contains a bar chart that shows the mix of products manufactured at each refinery.
+
+
+Figure 2
+
+Greece: The bar for Greece shows a relatively balanced production of all products with Diesel Fuel having a larger proportion.
+Poland: The bar for Poland is dominated by Heating Oil, which has a much larger segment compared to other products.
+ 
+Spain: Spain's production is highest among the four, with significant production of Gasoline- 92 and Diesel Fuel.
+UK: The UK refinery has the highest production of Gasoline-92, indicative of a focus on premium gasoline production.
+
+
+Transportation & Logistics Optimization
+ABSA Oil should enhance its transportation and logistics operations to ensure the efficient movement of crude oil from ports to refineries and the distribution of finished products to markets. Given the diverse geographical locations of ABSA’s suppliers and refineries, the optimization of these logistics can lead to significant cost savings and operational improvements.
+
+Figure 3
+ 
+
+Ceyhan to Greece: Shows moderate costs and shipment frequency but a lower volume compared to other routes, which may suggest either a smaller refinery capacity in Greece or less demand.
+Houma to Poland: Indicates higher transportation costs, perhaps due to longer travel distance or higher port charges, with moderate volumes and lower shipment frequency, pointing to a less frequent but necessary restocking schedule.
+Puerto Miranda to Spain: Displays a moderate cost with high volumes transported and a moderate shipment frequency, suggesting a busy route that is critical to maintaining the operations of the Spanish refinery.
+Melkøya to the UK: Exhibits the highest frequency of shipments and high transportation volumes, which could indicate a larger market demand in the UK and efficient transportation operations, possibly due to shorter travel times.
+
+
+The bar charts are useful for ABSA Oil to analyse and identify areas for cost savings, potential bottlenecks, or opportunities to improve the efficiency of its shipping operations. They might consider negotiating better rates for more expensive routes or increasing shipment frequency where possible to ensure steady supply chain operations
+ 
